@@ -240,18 +240,9 @@ def confirm_symptoms():
     if additional_symptom:
         symptoms.append(additional_symptom)
 
-    # Confirm the diagnosis based on the newly added symptoms
     disease, treatment = forward_chaining(symptoms)
     
-    # Ensure only a single disease is returned for the final confirmation
-    if isinstance(disease, list) and len(disease) == 1:
-        disease = disease[0]
-
-    # If still more than one disease, let the user reconfirm
-    if isinstance(disease, list):
-        return render_template('confirm_symptoms.html', diseases=disease, symptoms=symptoms, symptom_questions=symptom_questions)
-    else:
-        return render_template('diagnosis_results.html', disease=disease, symptoms=symptoms, treatment=treatment)
+    return render_template('result.html', disease=disease, treatment=treatment)
 
  
 
