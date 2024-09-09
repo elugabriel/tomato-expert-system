@@ -1,0 +1,151 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+        <style>
+                                body, html {
+                        margin: 0;
+                        padding: 0;
+                        height: 100%;
+                        font-family: Arial, sans-serif;
+                    }
+
+                    .top-bar {
+                        background-color: #343a40;
+                        color: white;
+                        padding: 10px 0;
+                    }
+
+                    .top-bar h1 {
+                        margin: 0;
+                        text-align: center;
+                    }
+
+                    .dashboard {
+                        display: flex;
+                        height: calc(100% - 50px); /* Adjust for the height of the top bar */
+                    }
+
+                    .sidebar {
+                        width: 200px;
+                        background-color: #343a40;
+                        color: white;
+                        padding: 20px;
+                        box-sizing: border-box;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center; /* Center items horizontally */
+                        position: fixed; /* Fix sidebar position */
+                        top: 0; /* Align to the top of the page */
+                        left: 0; /* Align to the left of the page */
+                        height: 100%; /* Make sidebar full height */
+                    }
+
+
+                    .sidebar .profile {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center; /* Center items horizontally */
+                    }
+
+                    .sidebar .profile img {
+                        width: 100px;
+                        height: 100px;
+                        border-radius: 50%;
+                        margin-bottom: 10px; /* Add space below the profile image */
+                    }
+
+                    .sidebar .profile .username {
+                        margin-bottom: 20px; /* Add space below the username */
+                    }
+
+                    .sidebar .profile h2 {
+                        margin: 60px 0; /* Add vertical space between links */
+                    }
+
+                    .sidebar .profile h2 a {
+                        color: white;
+                        text-decoration: none;
+                    }
+
+                    .sidebar .profile h2 a:hover {
+                        text-decoration: underline;
+                    }
+
+                    .main-content {
+                        flex-grow: 1;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        padding: 20px;
+                        box-sizing: border-box;
+                    }
+
+                    .container {
+                        max-width: 600px;
+                        width: 100%;
+                        text-align: center;
+                    }
+
+                    .container h2 {
+                        margin-bottom: 20px;
+                    }
+
+                    .container form .btn {
+                        margin-top: 10px;
+                    }
+
+                    .container a {
+                        display: block;
+                        margin-top: 10px;
+                    }
+
+        </style>
+
+    <div class="top-bar">
+        <div class="container">
+            <h1>Expert System for Tomato Diseases Diagnosis</h1>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <div class="sidebar">
+            <div class="profile">
+                <!-- <img src="{{ url_for('static', filename='profile.png') }}" alt="Profile Image" class="profile-image"> -->
+                <!-- <h2 class="username">{{ session.get('user_id') }}</h2> -->
+                <!-- <h2><a href="{{ url_for('home') }}">Home</a></h2> -->
+                <h2><a href="{{ url_for('login') }}">Login</a></h2>
+                <h2><a href="{{ url_for('register') }}">Register</a></h2>
+            </div>
+        </div>
+        <div class="main-content">
+            <div class="container mt-5">
+                <h2>Login</h2>
+                <form method="POST" action="{{ url_for('login') }}">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                </form>
+                <a href="{{ url_for('register') }}">Register</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js"></script>
+</body>
+</html>

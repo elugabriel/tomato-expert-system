@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Symptoms</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            padding: 20px;
+            background-color: #007bff;
+            color: #fff;
+        }
+        .container {
+            width: 80%;
+            margin: 20px auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            color: #007bff;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        p {
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        label {
+            margin: 10px 0;
+        }
+        input[type="text"] {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        input[type="submit"] {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Confirm Symptoms</h1>
+        <form action="{{ url_for('confirm_symptoms') }}" method="post">
+            <h2>Symptoms:</h2>
+            {% for symptom in symptoms %}
+                <p>{{ symptom_questions[symptom] }}</p>
+            {% endfor %}
+            <label>
+                Add more symptoms (optional):
+                <input type="text" name="additional_symptom">
+            </label>
+            <input type="hidden" name="symptoms" value="{{ symptoms|join(',') }}">
+            <input type="submit" value="Diagnose">
+        </form>
+    </div>
+</body>
+</html>
