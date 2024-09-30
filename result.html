@@ -51,6 +51,7 @@
         <h1>Diagnosis Result</h1>
         {% if disease %}
             <p><strong>Disease:</strong> {{ disease }}</p>
+            <p><strong>Symptoms Considered:</strong> {{ symptoms }}</p>
             <p><strong>Treatment:</strong> {{ treatment }}</p>
         {% else %}
             <p>No diagnosis available. Please check the symptoms and try again.</p>

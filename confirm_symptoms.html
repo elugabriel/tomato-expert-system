@@ -8,74 +8,116 @@
         body {
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 0;
+            padding: 20px;
             background-color: #f4f4f4;
         }
-        h1 {
-            text-align: center;
-            color: #333;
-            padding: 20px;
-            background-color: #007bff;
-            color: #fff;
-        }
         .container {
-            width: 80%;
-            margin: 20px auto;
             background: #fff;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            margin: auto;
+            text-align: left;
         }
-        h2 {
+        h1, h3, h4 {
             color: #007bff;
         }
-        form {
-            display: flex;
-            flex-direction: column;
-        }
-        p {
-            font-size: 16px;
-            margin: 10px 0;
+        h1 {
+            text-align: center;
         }
         label {
-            margin: 10px 0;
+            display: block;
+            margin-top: 20px;
+            font-weight: bold;
         }
-        input[type="text"] {
-            padding: 8px;
+        input[type="text"], select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
             border: 1px solid #ccc;
             border-radius: 4px;
-            width: 100%;
-            box-sizing: border-box;
         }
         input[type="submit"] {
             background-color: #007bff;
-            color: #fff;
+            color: white;
             border: none;
-            padding: 10px;
+            padding: 10px 15px;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 16px;
             margin-top: 20px;
         }
         input[type="submit"]:hover {
             background-color: #0056b3;
+        }
+        .disease-list {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .symptoms-list {
+            list-style-type: none;
+            padding-left: 0;
+            margin-left: 20px;
+        }
+        .symptoms-list li {
+            padding: 5px 0;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Confirm Symptoms</h1>
-        <form action="{{ url_for('confirm_symptoms') }}" method="post">
-            <h2>Symptoms:</h2>
+
+        <h3>Possible Diseases Based on Your Selected Symptoms:</h3>
+        <div class="disease-list">
+            <!-- Loop through each possible disease and display unique symptoms -->
+            {% if disease_symptoms %}
+                {% for disease, unique_symptoms in disease_symptoms.items() %}
+                    <h4>{{ disease }}</h4>
+                    <p><strong>Unique Symptoms:</strong></p>
+                    <ul class="symptoms-list">
+                        {% for symptom in unique_symptoms %}
+                            <li>{{ symptom }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endfor %}
+            {% else %}
+                <p>No diseases found with the provided symptoms. Please add more details or revise the symptoms.</p>
+            {% endif %}
+        </div>
+
+        <!-- Display current selected symptoms -->
+        <h3>Currently Selected Symptoms:</h3>
+        <ul class="symptoms-list">
             {% for symptom in symptoms %}
-                <p>{{ symptom_questions[symptom] }}</p>
+                <li>{{ symptom }}</li>
             {% endfor %}
+        </ul>
+
+        <!-- Form for confirming the symptoms -->
+        <form action="{{ url_for('confirm_symptoms') }}" method="post">
             <label>
                 Add more symptoms (optional):
-                <input type="text" name="additional_symptom">
+                <input type="text" name="additional_symptom" placeholder="Enter additional symptom">
             </label>
+            
+            <label>
+                Select the disease you think it might be (optional):
+                <select name="selected_disease">
+                    <option value="">--Select Disease--</option>
+                    {% for disease in disease_symptoms.keys() %}
+                        <option value="{{ disease }}">{{ disease }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <!-- Hidden input to carry over existing symptoms to the backend -->
             <input type="hidden" name="symptoms" value="{{ symptoms|join(',') }}">
-            <input type="submit" value="Diagnose">
+            
+            <input type="submit" value="Confirm and Diagnose">
         </form>
     </div>
 </body>
