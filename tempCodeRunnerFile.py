@@ -173,28 +173,20 @@ symptom_questions = {
 
 
 ## Forward Chaining (Iterative)
-# Forward Chaining for Disease Diagnosis
-# Forward Chaining (Iterative)
 def forward_chaining(symptoms):
-    possible_diseases = set(diseases.keys())
-    matched_symptoms = {disease: [] for disease in possible_diseases}
-
+    possible_diseases = []
+    
     for disease, info in diseases.items():
-        disease_symptoms = info['symptoms'].split(', ')
-        for symptom in disease_symptoms:
-            if any(symptom in s for s in symptoms):
-                matched_symptoms[disease].append(symptom)
-
-    # Keep diseases with at least one matched symptom
-    possible_diseases = [disease for disease, symp in matched_symptoms.items() if len(symp) > 0]
-
+        if all(symptom in info['symptoms'] for symptom in symptoms):
+            possible_diseases.append(disease)
+    
+    if not possible_diseases:
+        return None, 'Disease not found or insufficient data.'
+    
     if len(possible_diseases) == 1:
         return possible_diseases[0], diseases[possible_diseases[0]]['treatment']
-    elif len(possible_diseases) > 1:
-        return possible_diseases, None
-    else:
-        return None, "No disease found matching the symptoms."
     
+    return possible_diseases, 'Please provide additional symptoms for confirmation.'
 
 # Backward Chaining
 def backward_chaining(disease):
@@ -209,63 +201,15 @@ def home():
         return render_template('index.html', diseases=diseases.keys())
     else:
         return redirect(url_for('login'))
-    
-    
-    
-    
-@app.route('/diagnose', methods=['GET', 'POST'])
-def diagnose():
-    if request.method == 'POST':
-        symptoms = request.form.getlist('symptom')
-
-        if symptoms:
-            possible_diseases, treatment = forward_chaining(symptoms)
-            
-            if isinstance(possible_diseases, list):
-                return render_template('confirm_symptoms.html', diseases=possible_diseases, symptoms=symptoms, symptom_questions=symptom_questions)
-            else:
-                return render_template('result.html', disease=possible_diseases, treatment=treatment)
-        else:
-            flash('Please select at least one symptom.', 'warning')
-            return redirect(url_for('diagnose'))
-
-    return render_template('diagnose.html', symptom_questions=symptom_questions)
-
-@app.route('/confirm_symptoms', methods=['POST'])
-def confirm_symptoms():
-    # Log received data
-    logging.debug("Received POST data for confirmation.")
-    
-    selected_disease = request.form.get('disease')
-    logging.debug(f"Selected disease: {selected_disease}")
-    
-    symptoms = request.form.get('symptoms')
-    logging.debug(f"Symptoms before additional: {symptoms}")
-    
-    if symptoms:
-        symptoms = symptoms.split(',')
-
-    additional_symptom = request.form.get('additional_symptom')
-    logging.debug(f"Additional symptom entered: {additional_symptom}")
-
-    if additional_symptom:
-        symptoms.append(additional_symptom)
-
-    logging.debug(f"Symptoms after adding additional: {symptoms}")
-    
-    # Forward chaining logic
-    disease, treatment = forward_chaining(symptoms)
-    
-    logging.debug(f"Disease diagnosed: {disease}, Treatment: {treatment}")
-
-    # Handle multiple diseases case
-    if isinstance(disease, list):
-        return render_template('confirm_symptoms.html', diseases=disease, symptoms=symptoms, symptom_questions=symptom_questions)
-    else:
-        return render_template('diagnosis_results.html', disease=disease, symptoms=symptoms, treatment=treatment)
-
-
  
+
+@app.route('/diagnose', methods=['POST'])
+def diagnose():
+    symptoms = request.form.get('symptom').split(',')
+    disease, message = forward_chaining(symptoms)
+    if isinstance(disease, list):
+        return render_template('confirm_symptoms.html', diseases=disease, symptoms=symptoms)
+    return render_template('result.html', disease=disease, treatment=message)
 
 @app.route('/validate', methods=['POST'])
 def validate():
@@ -398,11 +342,10 @@ def guided_questionnaire():
 
 @app.route('/questionnaire', methods=['POST'])
 def questionnaire():
-    
     symptoms = request.form.getlist('symptoms')
     disease, message = forward_chaining(symptoms)
     if isinstance(disease, list):
-        return render_template('confirm_symptoms.html', diseases=disease, symptoms=symptoms, symptom_questions=symptom_questions)
+        return render_template('confirm_symptoms.html', diseases=disease, symptoms=symptoms)
     return render_template('result.html', disease=disease, treatment=message)
 
 @app.route('/update_symptoms', methods=['POST'])

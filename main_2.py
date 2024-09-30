@@ -2,19 +2,18 @@ import logging
 from flask import Flask, request, render_template, url_for, redirect, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
-from werkzeug.utils import secure_filename
 import os
 import numpy as np
 import tensorflow as tf
-from PIL import Image
 
+# Flask app setup
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 db = SQLAlchemy(app)
 
-# Ensure the directory for uploads exists
+# Create the uploads directory if it doesn't exist
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
 
@@ -30,14 +29,14 @@ class User(db.Model):
     username = db.Column(db.String(150), nullable=False, unique=True)
     password = db.Column(db.String(150), nullable=False)
 
-# Create database tables
+# Create all tables in the database
 with app.app_context():
     db.create_all()
 
-# Load the trained model
+# Load the trained model for leaf disease detection
 model = tf.keras.models.load_model('Tomato_leaf_disease_detection_classification2.h5')
 
-# Define allowed file extensions for image uploads
+# Allowed file extensions for image uploads
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', "JPG"}
 
 # Disease labels
@@ -172,20 +171,23 @@ symptom_questions = {
 }
 
 
-## Forward Chaining (Iterative)
-# Forward Chaining for Disease Diagnosis
-# Forward Chaining (Iterative)
+
+# Forward chaining function for disease diagnosis based on symptoms
 def forward_chaining(symptoms):
+    if not symptoms:
+        return None, "No symptoms provided."
+    
     possible_diseases = set(diseases.keys())
     matched_symptoms = {disease: [] for disease in possible_diseases}
 
+    # Match provided symptoms to diseases
     for disease, info in diseases.items():
         disease_symptoms = info['symptoms'].split(', ')
         for symptom in disease_symptoms:
             if any(symptom in s for s in symptoms):
                 matched_symptoms[disease].append(symptom)
 
-    # Keep diseases with at least one matched symptom
+    # Filter diseases based on matched symptoms
     possible_diseases = [disease for disease, symp in matched_symptoms.items() if len(symp) > 0]
 
     if len(possible_diseases) == 1:
@@ -194,79 +196,83 @@ def forward_chaining(symptoms):
         return possible_diseases, None
     else:
         return None, "No disease found matching the symptoms."
-    
 
-# Backward Chaining
+# Backward chaining function to retrieve symptoms and treatment based on a disease
 def backward_chaining(disease):
     if disease in diseases:
         return diseases[disease]['symptoms'], diseases[disease]['treatment']
     return None, 'Disease not found.'
 
-# Home route
+# Flask route: Home page
 @app.route('/home')
 def home():
     if 'user_id' in session:
         return render_template('index.html', diseases=diseases.keys())
     else:
         return redirect(url_for('login'))
-    
-    
-    
-    
+
+# Flask route: Diagnose symptoms
 @app.route('/diagnose', methods=['GET', 'POST'])
 def diagnose():
     if request.method == 'POST':
         symptoms = request.form.getlist('symptom')
 
         if symptoms:
-            possible_diseases, treatment = forward_chaining(symptoms)
-            
-            if isinstance(possible_diseases, list):
-                return render_template('confirm_symptoms.html', diseases=possible_diseases, symptoms=symptoms, symptom_questions=symptom_questions)
+            possible_diseases, _ = forward_chaining(symptoms)
+
+            if isinstance(possible_diseases, list) and len(possible_diseases) > 1:
+                # Create the disease_symptoms dictionary to store unique symptoms for each disease
+                disease_symptoms = {}
+                for disease in possible_diseases:
+                    disease_info = diseases[disease]
+                    unique_symptoms = [s for s in disease_info['symptoms'].split(', ') if s not in symptoms]
+                    disease_symptoms[disease] = unique_symptoms
+
+                # Render the confirmation page with unique symptoms for each disease
+                return render_template('confirm_symptoms.html', disease_symptoms=disease_symptoms, symptoms=symptoms, symptom_questions=symptom_questions)
+
+            elif isinstance(possible_diseases, str):
+                # If only one disease is found, show the result
+                return render_template('result.html', disease=possible_diseases, symptoms=symptoms, treatment=diseases[possible_diseases]['treatment'])
             else:
-                return render_template('result.html', disease=possible_diseases, treatment=treatment)
+                flash('No disease found matching the symptoms.', 'warning')
+                return redirect(url_for('diagnose'))
         else:
             flash('Please select at least one symptom.', 'warning')
             return redirect(url_for('diagnose'))
 
     return render_template('diagnose.html', symptom_questions=symptom_questions)
 
+# Flask route: Confirm symptoms
 @app.route('/confirm_symptoms', methods=['POST'])
 def confirm_symptoms():
-    # Log received data
-    logging.debug("Received POST data for confirmation.")
-    
-    selected_disease = request.form.get('disease')
-    logging.debug(f"Selected disease: {selected_disease}")
-    
-    symptoms = request.form.get('symptoms')
-    logging.debug(f"Symptoms before additional: {symptoms}")
-    
-    if symptoms:
-        symptoms = symptoms.split(',')
-
-    additional_symptom = request.form.get('additional_symptom')
-    logging.debug(f"Additional symptom entered: {additional_symptom}")
+    symptoms = request.form.get('symptoms').split(',')  # Retrieve original symptoms
+    additional_symptom = request.form.get('additional_symptom')  # Get the additional symptom
 
     if additional_symptom:
-        symptoms.append(additional_symptom)
+        symptoms.append(additional_symptom.strip())  # Add the additional symptom if provided
 
-    logging.debug(f"Symptoms after adding additional: {symptoms}")
-    
-    # Forward chaining logic
-    disease, treatment = forward_chaining(symptoms)
-    
-    logging.debug(f"Disease diagnosed: {disease}, Treatment: {treatment}")
+    selected_disease = request.form.get('selected_disease')  # Get the selected disease
 
-    # Handle multiple diseases case
-    if isinstance(disease, list):
-        return render_template('confirm_symptoms.html', diseases=disease, symptoms=symptoms, symptom_questions=symptom_questions)
+    if selected_disease:
+        symptoms, treatment = backward_chaining(selected_disease)
+        return render_template('result.html', disease=selected_disease, symptoms=symptoms, treatment=treatment)
+
+    # Run forward chaining again with the updated symptoms
+    possible_diseases, _ = forward_chaining(symptoms)
+
+    if isinstance(possible_diseases, list):
+        disease_symptoms = {}
+        for disease in possible_diseases:
+            disease_info = diseases[disease]
+            unique_symptoms = [s for s in disease_info['symptoms'].split(', ') if s not in symptoms]
+            disease_symptoms[disease] = unique_symptoms
+
+        return render_template('confirm_symptoms.html', disease_symptoms=disease_symptoms, symptoms=symptoms, symptom_questions=symptom_questions)
     else:
-        return render_template('diagnosis_results.html', disease=disease, symptoms=symptoms, treatment=treatment)
+        return render_template('result.html', disease=possible_diseases, symptoms=symptoms, treatment=diseases.get(possible_diseases, {}).get('treatment', 'Treatment not available'))
 
-
- 
-
+# Flask route: Validate the final disease selection
 @app.route('/validate', methods=['POST'])
 def validate():
     disease = request.form.get('disease')
